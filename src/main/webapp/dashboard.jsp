@@ -10,8 +10,9 @@
     <h1>Bem-vindo ao Dashboard</h1>
     <p>Escolha uma opção:</p>
     <ul>
-        <li><a href="contratar_servico.jsp">Contratar Serviço</a></li>
-        <li><a href="comprar_peca.jsp">Comprar Peça</a></li>
+        <li><a href="contratarservico.jsp">Contratar Serviço</a></li>
+        <li><a href="pecas.jsp">Comprar Peça</a></li>
+        <li><a href="addVehicle.jsp">Adicionar Veículo</a></li> <!-- Link para addVehicle.jsp -->
     </ul>
 </body>
 </html>

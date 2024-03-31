@@ -1,103 +1,99 @@
-package com.AutoWeb.servlets;
+package com.AutoWeb.servlet;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
+import com.AutoWeb.dao.CustomerDAO;
 import com.AutoWeb.dao.SaleDAO;
+import com.AutoWeb.dao.SaleItemDAO;
+import com.AutoWeb.entities.Customer;
 import com.AutoWeb.entities.Sale;
+import com.AutoWeb.entities.SaleItem;
+import com.AutoWeb.entities.User;
 
 @WebServlet("/SaleServlet")
 public class SaleServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+
     private SaleDAO saleDAO;
+    private SaleItemDAO saleItemDAO;
+    private CustomerDAO customerDAO;
 
-    public SaleServlet() {
-        super();
+    public void init() {
         saleDAO = new SaleDAO();
-    }
-
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-       
+        saleItemDAO = new SaleItemDAO();
+        customerDAO = new CustomerDAO();
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
         String action = request.getParameter("action");
-        switch (action) {
-            case "addSale":
-                addSale(request, response);
-                break;
-            
-            default:
-                break;
-        }
-    }
 
-    protected void doPut(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        
-        String action = request.getParameter("action");
-        switch (action) {
-            case "updateSale":
-                updateSale(request, response);
-                break;
-            
-            default:
-                break;
-        }
-    }
-
-    protected void doDelete(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        
-        String action = request.getParameter("action");
-        switch (action) {
-            case "deleteSale":
-                deleteSale(request, response);
-                break;
-           
-            default:
-                break;
+        if (action != null && action.equals("addSale")) {
+            addSale(request, response);
+        } else {
+            response.sendRedirect("error.jsp");
         }
     }
 
     private void addSale(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Long id = Long.parseLong(request.getParameter("id"));
-        Double value = Double.parseDouble(request.getParameter("value"));
+        String idParam = request.getParameter("id");
+        String valueParam = request.getParameter("value");
+        String quantityParam = request.getParameter("quantity");
 
-        Sale sale = new Sale();
-        sale.setId(id);
-        sale.setValue(value);
+        if (idParam == null || valueParam == null || quantityParam == null) {
+            response.sendRedirect("error.jsp");
+            return;
+        }
 
-        saleDAO.addSale(sale);
+        try {
+            Long id = Long.parseLong(idParam);
+            Double value = Double.parseDouble(valueParam);
+            Integer quantity = Integer.parseInt(quantityParam);
 
-        response.sendRedirect("index.jsp"); 
-    }
+            Sale sale = new Sale();
+            sale.setId(id);
+            sale.setValue(value);
 
-    private void updateSale(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        Long id = Long.parseLong(request.getParameter("id"));
-        Double value = Double.parseDouble(request.getParameter("value"));
+            saleDAO.addSale(sale);
 
-        Sale updatedSale = new Sale();
-        updatedSale.setValue(value);
+            HttpSession session = request.getSession();
+            User user = (User) session.getAttribute("user");
 
-        saleDAO.updateSale(id, updatedSale);
+            if (user != null) {
+                Long userId = user.getId();
+                String userName = user.getName();
+                String userEmail = user.getEmail();
+                String userCpf = user.getCpf();
 
-        response.sendRedirect("index.jsp"); 
-    }
+                Customer newCustomer = new Customer();
+                newCustomer.setId(userId);
+                newCustomer.setName(userName);
+                newCustomer.setEmail(userEmail);
+                newCustomer.setCpf(userCpf);
 
-    private void deleteSale(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        Long id = Long.parseLong(request.getParameter("id"));
-        saleDAO.deleteSale(id);
-        response.sendRedirect("index.jsp"); 
+                customerDAO.addPart(newCustomer);
+            }
+
+            SaleItem saleItem = new SaleItem();
+            saleItem.setSaleId(sale.getId());
+            saleItem.setPartId(Long.parseLong(request.getParameter("id")));
+            saleItem.setQuantity(Integer.parseInt(request.getParameter("quantity")));
+
+            saleItemDAO.addSaleItem(saleItem);
+
+            response.sendRedirect("index.jsp");
+        } catch (NumberFormatException e) {
+            response.sendRedirect("error.jsp");
+        }
     }
 }
